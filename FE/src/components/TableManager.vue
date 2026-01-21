@@ -9,12 +9,21 @@ import { useToast } from 'primevue/usetoast';
 import { computed, ref } from 'vue';
 const toast = useToast();
 const tables = ref([
-    { id: 1, name: 'Bàn 1', guests: 0, status: 'empty', drinks: [] },
-    { id: 2, name: 'Bàn 2', guests: 2, status: 'occupied', drinks: [{ id: 1, name: 'Cà phê', price: 20000, qty: 2 }] },
-    { id: 3, name: 'Bàn 3', guests: 0, status: 'reserved', drinks: [] },
-    { id: 4, name: 'Bàn 4', guests: 4, status: 'occupied', drinks: [{ id: 2, name: 'Trà sữa', price: 30000, qty: 4 }] },
-    { id: 5, name: 'Bàn 5', guests: 0, status: 'empty', drinks: [] }
+    { id: 1, name: 'Bàn 1', floor: 1, guests: 0, status: 'empty', drinks: [] },
+    { id: 2, name: 'Bàn 2', floor: 1, guests: 2, status: 'occupied', drinks: [{ id: 1, name: 'Cà phê', price: 20000, qty: 2 }] },
+    { id: 3, name: 'Bàn 3', floor: 2, guests: 0, status: 'reserved', drinks: [] },
+    { id: 4, name: 'Bàn 4', floor: 2, guests: 4, status: 'occupied', drinks: [{ id: 2, name: 'Trà sữa', price: 30000, qty: 4 }] },
+    { id: 5, name: 'Bàn 5', floor: 3, guests: 0, status: 'empty', drinks: [] }
 ]);
+// Group tables by floor
+const groupedTables = computed(() => {
+    const groups = {};
+    tables.value.forEach((table) => {
+        if (!groups[table.floor]) groups[table.floor] = [];
+        groups[table.floor].push(table);
+    });
+    return groups;
+});
 
 const drinksList = ref([
     { id: 1, name: 'Cà phê', price: 20000 },
@@ -35,7 +44,9 @@ const splitTargetTable = ref(null);
 const splitTargetTableCopy = ref(null);
 const transferQuantity = ref({});
 const splitTableOptions = computed(() => tables.value.filter((t) => t.id !== selectedTable.value?.id));
-
+const cancelTableDialogVisible = ref(false);
+const cancelTableReason = ref('');
+const cancelTableError = ref('');
 // function addTable() {
 //     const nextId = tables.value.length + 1;
 //     tables.value.push({
@@ -80,14 +91,26 @@ function statusClass(status) {
     }
 }
 
+// function statusBadgeClass(status) {
+//     switch (status) {
+//         case 'empty':
+//             return 'bg-gray-200 text-gray-700';
+//         case 'occupied':
+//             return 'bg-green-100 text-green-700';
+//         case 'reserved':
+//             return 'bg-yellow-100 text-yellow-800';
+//         default:
+//             return '';
+//     }
+// }
 function statusBadgeClass(status) {
     switch (status) {
         case 'empty':
-            return 'bg-gray-200 text-gray-700';
+            return 'secondary';
         case 'occupied':
-            return 'bg-green-100 text-green-700';
+            return 'success';
         case 'reserved':
-            return 'bg-yellow-100 text-yellow-800';
+            return 'warn';
         default:
             return '';
     }
@@ -139,6 +162,11 @@ function confirmTable() {
 function payTable() {
     // Thanh toán: reset bàn
     Object.assign(selectedTable.value, { guests: 0, drinks: [], status: 'empty' });
+    drawerVisible.value = false;
+}
+function holdTable() {
+    // Giữ bàn: đặt trạng thái bàn thành 'reserved'
+    Object.assign(selectedTable.value, { guests: 0, drinks: [], status: 'reserved' });
     drawerVisible.value = false;
 }
 function cancelReserve() {
@@ -238,39 +266,76 @@ function closeSplitDialog() {
     splitTargetTableCopy.value = null;
     transferQuantity.value = {};
 }
-
-function mergeTable() {
-    // Gộp bàn: logic demo, thực tế cần UI chọn bàn để gộp
-    toast.add({ severity: 'warn', summary: 'Warning', detail: 'Chức năng tách bàn sẽ được phát triển thêm!', life: 3000 });
+// Cancel Table logic
+function openCancelTableDialog() {
+    cancelTableReason.value = '';
+    cancelTableError.value = '';
+    cancelTableDialogVisible.value = true;
+}
+function confirmCancelTable() {
+    if (!cancelTableReason.value.trim()) {
+        cancelTableError.value = 'Vui lòng nhập lý do hủy bàn!';
+        return;
+    } // Xóa toàn bộ đồ uống, reset bàn
+    Object.assign(selectedTable.value, {
+        guests: 0,
+        drinks: [],
+        status: 'empty'
+    });
+    cancelTableDialogVisible.value = false;
+    drawerVisible.value = false;
+    toast.add({ severity: 'info', summary: 'Đã hủy bàn', detail: `Lý do: ${cancelTableReason.value}`, life: 3000 });
+}
+function closeCancelTableDialog() {
+    cancelTableDialogVisible.value = false;
 }
 </script>
 
 <template>
     <div class="p-4">
         <!-- <button class="mb-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition" @click="addTable">Thêm mới bàn</button> -->
-        <div class="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
-            <div v-for="table in tables" :key="table.id" class="rounded-lg shadow p-4 flex flex-col items-center border border-gray-200 bg-white hover:shadow-lg transition cursor-pointer" :class="statusClass(table.status)" @click="editTable(table)">
-                <div class="text-lg font-semibold mb-2">{{ table.name }}</div>
-                <div class="mb-1">
-                    Số khách: <span class="font-bold">{{ table.guests }}</span>
-                </div>
-                <div class="mb-1">
-                    Tổng tiền: <span class="font-bold text-green-600">{{ formatCurrency(calculateTotal(table.drinks)) }}</span>
-                </div>
-                <div class="text-sm px-2 py-1 rounded" :class="statusBadgeClass(table.status)">
-                    {{ statusText(table.status) }}
+        <div v-for="(tables, floor) in groupedTables" :key="floor" class="mb-8">
+            <div class="text-xl font-bold mb-2 flex items-center gap-2">
+                <span class="inline-block px-3 py-1 rounded bg-green-100 text-green-600">Tầng {{ floor }}</span>
+                <span class="text-gray-500 text-base"
+                    >({{ tables.length }} bàn: <span class="text-green-600">{{ tables.filter((t) => t.status === 'occupied').length }} có khách</span>,
+                    <span class="text-yellow-500">{{ tables.filter((t) => t.status === 'reserved').length }} đã đặt</span>,
+                    <span class="text-gray-700">{{ tables.filter((t) => t.status === 'empty').length }} trống</span>
+                    )</span
+                >
+            </div>
+            <div class="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+                <div
+                    v-for="table in tables"
+                    :key="table.id"
+                    class="rounded-lg shadow p-4 flex flex-col items-center border border-gray-200 bg-white hover:shadow-lg transition cursor-pointer"
+                    :class="statusClass(table.status)"
+                    @click="editTable(table)"
+                >
+                    <div class="text-lg font-semibold mb-2">{{ table.name }}</div>
+                    <div class="mb-1">
+                        Số khách: <span class="font-bold">{{ table.guests }}</span>
+                    </div>
+                    <div class="mb-1">
+                        Tổng tiền: <span class="font-bold text-green-600">{{ formatCurrency(calculateTotal(table.drinks)) }}</span>
+                    </div>
+                    <Button size="small" :label="statusText(table.status)" outlined class="text-sm px-2 py-1 rounded" :severity="statusBadgeClass(table.status)" />
+                    <!-- <div class="text-sm px-2 py-1 rounded" :class="statusBadgeClass(table.status)">
+                        {{ statusText(table.status) }}
+                    </div> -->
                 </div>
             </div>
         </div>
-        <Drawer v-model:visible="drawerVisible" header="Quản lý bàn" :modal="true" :style="{ width: '400px' }" position="right">
+        <Drawer v-model:visible="drawerVisible" header="Chi tiết bàn" :modal="true" :style="{ width: '420px' }" position="right">
             <template v-if="selectedTable">
-                <div class="mb-4">
-                    <label class="block mb-1 font-medium">Tên bàn</label>
-                    <InputText v-model="editData.name" class="w-full" disabled />
+                <div class="mb-4 flex items-center gap-2">
+                    <div class="text-lg font-bold">{{ editData.name }}</div>
+                    <span class="px-2 py-1 rounded bg-blue-100 text-blue-700 text-xs">Tầng {{ selectedTable.floor }}</span>
+                    <span class="px-2 py-1 rounded text-xs" :class="statusBadgeClass(selectedTable.status)">{{ statusText(selectedTable.status) }}</span>
                 </div>
-                <div class="mb-4">
-                    <label class="block mb-1 font-medium">Số khách</label>
-                    <InputNumber v-model="editData.guests" :min="0" class="w-full" showButtons buttonLayout="horizontal" />
+                <div class="mb-4 flex items-center gap-2">
+                    <label class="block font-medium">Số khách:</label>
+                    <InputNumber v-model="editData.guests" :min="0" class="w-24" showButtons buttonLayout="horizontal" />
                 </div>
                 <Card class="mb-4">
                     <template #title>Đồ uống</template>
@@ -279,7 +344,7 @@ function mergeTable() {
                             <InputText v-model="drinkSearch" placeholder="Tìm đồ uống..." class="flex-1" />
                             <Button @click="addDrink" label="Thêm" icon="pi pi-plus" severity="success" outlined />
                         </div>
-                        <DataTable :value="filteredDrinks" class="mb-2" scrollHeight="240px" size="small" :rows="5">
+                        <DataTable :value="filteredDrinks" class="mb-2" scrollHeight="180px" size="small" :rows="4">
                             <Column field="name" header="Tên đồ uống" style="width: 60%">
                                 <template #body="{ data }">
                                     <span class="cursor-pointer hover:text-blue-600" @click="selectDrink(data)">{{ data.name }}</span>
@@ -291,7 +356,7 @@ function mergeTable() {
                                 </template>
                             </Column>
                         </DataTable>
-                        <DataTable :value="editData.drinks" class="mb-2" size="small" :rows="5">
+                        <DataTable :value="editData.drinks" class="mb-2" size="small" :rows="4">
                             <Column field="name" header="Tên"></Column>
                             <Column field="qty" header="SL" style="width: 60px">
                                 <template #body="{ data }">
@@ -322,11 +387,25 @@ function mergeTable() {
                 </div>
                 <div class="flex gap-2 flex-wrap">
                     <Button @click="confirmTable" label="Lưu" icon="pi pi-check" severity="primary" />
-                    <Button v-if="selectedTable.status === 'occupied'" @click="payTable" label="Thanh toán" icon="pi pi-credit-card" severity="success" />
+                    <Button v-if="selectedTable.status === 'occupied'" @click="payTable" label="Thanh toán" icon="pi pi-credit-card" severity="warn" />
+                    <Button v-if="selectedTable.status === 'empty'" @click="holdTable" label="Giữ bàn" icon="pi pi-credit-card" severity="warn" />
                     <Button v-if="selectedTable.status === 'reserved'" @click="cancelReserve" label="Hủy đặt bàn" icon="pi pi-ban" severity="danger" />
-                    <Button v-if="selectedTable.status === 'occupied'" @click="splitTable" label="Tách bàn" icon="pi pi-external-link" severity="warn" />
-                    <Button v-if="selectedTable.status === 'occupied'" @click="mergeTable" label="Gộp bàn" icon="pi pi-link" severity="help" />
-                    <Button @click="drawerVisible = false" label="Đóng" icon="pi pi-times" severity="secondary" outlined />
+                    <Button v-if="selectedTable.status === 'occupied'" @click="splitTable" label="Tách bàn" icon="pi pi-external-link" severity="help" />
+                    <Button v-if="selectedTable.status === 'occupied'" @click="openCancelTableDialog" label="Hủy bàn" icon="pi pi-times-circle" severity="danger" outlined />
+                    <!-- Cancel Table Dialog (move outside Drawer for proper rendering) -->
+                    <Dialog v-model:visible="cancelTableDialogVisible" header="Hủy bàn" :modal="true" :style="{ width: '400px' }">
+                        <template #default>
+                            <div class="mb-4">
+                                <label class="block mb-2 font-medium">Lý do hủy bàn <span class="text-red-500">*</span></label>
+                                <Textarea class="w-full" placeholder="Nhập lý do..." :autoResize="true" rows="3" cols="30" v-model="cancelTableReason" />
+                                <div v-if="cancelTableError" class="text-red-500 text-sm mt-1">{{ cancelTableError }}</div>
+                            </div>
+                            <div class="flex gap-2 justify-end mt-4">
+                                <Button label="Xác nhận" icon="pi pi-check" severity="danger" @click="confirmCancelTable" />
+                                <Button label="Hủy" icon="pi pi-times" severity="secondary" outlined @click="closeCancelTableDialog" />
+                            </div>
+                        </template>
+                    </Dialog>
                 </div>
             </template>
         </Drawer>
