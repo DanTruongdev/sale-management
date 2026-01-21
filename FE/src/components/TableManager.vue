@@ -5,8 +5,9 @@ import Column from 'primevue/column';
 import DataTable from 'primevue/datatable';
 import InputNumber from 'primevue/inputnumber';
 import InputText from 'primevue/inputtext';
+import { useToast } from 'primevue/usetoast';
 import { computed, ref } from 'vue';
-
+const toast = useToast();
 const tables = ref([
     { id: 1, name: 'Bàn 1', guests: 0, status: 'empty', drinks: [] },
     { id: 2, name: 'Bàn 2', guests: 2, status: 'occupied', drinks: [{ id: 1, name: 'Cà phê', price: 20000, qty: 2 }] },
@@ -28,16 +29,23 @@ const selectedTable = ref(null);
 const editData = ref({ name: '', guests: 0, drinks: [] });
 const drinkSearch = ref('');
 
-function addTable() {
-    const nextId = tables.value.length + 1;
-    tables.value.push({
-        id: nextId,
-        name: `Bàn ${nextId}`,
-        guests: 0,
-        status: 'empty',
-        drinks: []
-    });
-}
+// Split table logic
+const splitDialogVisible = ref(false);
+const splitTargetTable = ref(null);
+const splitTargetTableCopy = ref(null);
+const transferQuantity = ref({});
+const splitTableOptions = computed(() => tables.value.filter((t) => t.id !== selectedTable.value?.id));
+
+// function addTable() {
+//     const nextId = tables.value.length + 1;
+//     tables.value.push({
+//         id: nextId,
+//         name: `Bàn ${nextId}`,
+//         guests: 0,
+//         status: 'empty',
+//         drinks: []
+//     });
+// }
 
 function editTable(table) {
     selectedTable.value = table;
@@ -111,11 +119,19 @@ function formatCurrency(val) {
     return val.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' });
 }
 
+function calculateTotal(drinks) {
+    return drinks.reduce((sum, d) => sum + d.qty * d.price, 0);
+}
+
 const totalPrice = computed(() => {
     return editData.value.drinks.reduce((sum, d) => sum + d.qty * d.price, 0);
 });
 
 function confirmTable() {
+    if (!editData.value.drinks || editData.value.drinks.length === 0) {
+        toast.add({ severity: 'warn', summary: 'Warning', detail: 'Vui lòng chọn ít nhất một đồ uống', life: 3000 });
+        return;
+    }
     Object.assign(selectedTable.value, editData.value, { status: 'occupied' });
     drawerVisible.value = false;
 }
@@ -125,15 +141,107 @@ function payTable() {
     Object.assign(selectedTable.value, { guests: 0, drinks: [], status: 'empty' });
     drawerVisible.value = false;
 }
+function cancelReserve() {
+    Object.assign(selectedTable.value, { guests: 0, drinks: [], status: 'empty' });
+    drawerVisible.value = false;
+}
 
 function splitTable() {
-    // Tách bàn: logic demo, thực tế cần UI chọn món để tách
-    alert('Chức năng tách bàn sẽ được phát triển thêm!');
+    splitTargetTable.value = null;
+    splitTargetTableCopy.value = null;
+    transferQuantity.value = {};
+    splitDialogVisible.value = true;
+}
+
+function handleSelectSplitTable() {
+    if (splitTargetTable.value) {
+        // Tạo bản copy của bàn được chọn để thao tác
+        splitTargetTableCopy.value = JSON.parse(JSON.stringify(splitTargetTable.value));
+    }
+}
+
+function transferDrink(drinkId, fromTable, toTable, qty) {
+    const sourceDrinks = fromTable === 'current' ? editData.value.drinks : splitTargetTableCopy.value.drinks;
+    const targetDrinks = fromTable === 'current' ? splitTargetTableCopy.value.drinks : editData.value.drinks;
+
+    const drinkIndex = sourceDrinks.findIndex((d) => d.id === drinkId);
+    if (drinkIndex === -1) return;
+
+    const drink = sourceDrinks[drinkIndex];
+    const transferQty = qty || drink.qty;
+
+    if (transferQty > drink.qty) {
+        toast.add({ severity: 'warn', summary: 'Cảnh báo', detail: 'Số lượng chuyển không được vượt quá số lượng hiện có!', life: 2000 });
+        return;
+    }
+
+    // Giảm số lượng ở bàn nguồn
+    if (transferQty === drink.qty) {
+        sourceDrinks.splice(drinkIndex, 1);
+    } else {
+        drink.qty -= transferQty;
+    }
+
+    // Thêm vào bàn đích
+    const existingDrink = targetDrinks.find((d) => d.id === drinkId);
+    if (existingDrink) {
+        existingDrink.qty += transferQty;
+    } else {
+        targetDrinks.push({ ...drink, qty: transferQty });
+    }
+
+    // Reset transfer quantity
+    delete transferQuantity.value[drinkId];
+}
+
+function saveSplitTable() {
+    if (!splitTargetTable.value || !splitTargetTableCopy.value) {
+        toast.add({ severity: 'warn', summary: 'Warning', detail: 'Vui lòng chọn bàn muốn tách!', life: 3000 });
+        return;
+    }
+
+    // Cập nhật dữ liệu từ bản copy vào bàn thật
+    Object.assign(splitTargetTable.value, splitTargetTableCopy.value);
+
+    // Cập nhật bàn hiện tại từ editData
+    Object.assign(selectedTable.value, editData.value);
+
+    // Cập nhật trạng thái bàn hiện tại
+    if (selectedTable.value.drinks.length === 0) {
+        selectedTable.value.status = 'empty';
+        selectedTable.value.guests = 0;
+    }
+
+    // Cập nhật trạng thái bàn tách
+    if (splitTargetTable.value.drinks.length === 0) {
+        splitTargetTable.value.status = 'empty';
+        splitTargetTable.value.guests = 0;
+    } else if (splitTargetTable.value.status === 'empty' || splitTargetTable.value.status === 'reserved') {
+        splitTargetTable.value.status = 'occupied';
+    }
+
+    splitDialogVisible.value = false;
+
+    // Nếu bàn hiện tại không còn đồ uống, đóng drawer
+    if (selectedTable.value.drinks.length === 0) {
+        drawerVisible.value = false;
+    }
+
+    toast.add({ severity: 'success', summary: 'Tách bàn', detail: 'Đã tách bàn thành công!', life: 2000 });
+}
+
+function closeSplitDialog() {
+    // Khi đóng dialog mà không lưu, các thay đổi trên bản copy sẽ bị hủy
+    // editData vẫn giữ nguyên, splitTargetTableCopy sẽ bị reset
+    splitDialogVisible.value = false;
+    splitTargetTable.value = null;
+    splitTargetTableCopy.value = null;
+    transferQuantity.value = {};
 }
 
 function mergeTable() {
     // Gộp bàn: logic demo, thực tế cần UI chọn bàn để gộp
-    alert('Chức năng gộp bàn sẽ được phát triển thêm!');
+    toast.add({ severity: 'warn', summary: 'Warning', detail: 'Chức năng tách bàn sẽ được phát triển thêm!', life: 3000 });
 }
 </script>
 
@@ -145,6 +253,9 @@ function mergeTable() {
                 <div class="text-lg font-semibold mb-2">{{ table.name }}</div>
                 <div class="mb-1">
                     Số khách: <span class="font-bold">{{ table.guests }}</span>
+                </div>
+                <div class="mb-1">
+                    Tổng tiền: <span class="font-bold text-green-600">{{ formatCurrency(calculateTotal(table.drinks)) }}</span>
                 </div>
                 <div class="text-sm px-2 py-1 rounded" :class="statusBadgeClass(table.status)">
                     {{ statusText(table.status) }}
@@ -168,7 +279,7 @@ function mergeTable() {
                             <InputText v-model="drinkSearch" placeholder="Tìm đồ uống..." class="flex-1" />
                             <Button @click="addDrink" label="Thêm" icon="pi pi-plus" severity="success" outlined />
                         </div>
-                        <DataTable :value="filteredDrinks" class="mb-2" scrollHeight="120px" size="small" :rows="5">
+                        <DataTable :value="filteredDrinks" class="mb-2" scrollHeight="240px" size="small" :rows="5">
                             <Column field="name" header="Tên đồ uống" style="width: 60%">
                                 <template #body="{ data }">
                                     <span class="cursor-pointer hover:text-blue-600" @click="selectDrink(data)">{{ data.name }}</span>
@@ -212,12 +323,95 @@ function mergeTable() {
                 <div class="flex gap-2 flex-wrap">
                     <Button @click="confirmTable" label="Lưu" icon="pi pi-check" severity="primary" />
                     <Button v-if="selectedTable.status === 'occupied'" @click="payTable" label="Thanh toán" icon="pi pi-credit-card" severity="success" />
+                    <Button v-if="selectedTable.status === 'reserved'" @click="cancelReserve" label="Hủy đặt bàn" icon="pi pi-ban" severity="danger" />
                     <Button v-if="selectedTable.status === 'occupied'" @click="splitTable" label="Tách bàn" icon="pi pi-external-link" severity="warn" />
                     <Button v-if="selectedTable.status === 'occupied'" @click="mergeTable" label="Gộp bàn" icon="pi pi-link" severity="help" />
                     <Button @click="drawerVisible = false" label="Đóng" icon="pi pi-times" severity="secondary" outlined />
                 </div>
             </template>
         </Drawer>
+
+        <!-- Split Table Dialog -->
+        <Dialog v-model:visible="splitDialogVisible" header="Tách bàn" :modal="true" :style="{ width: '800px' }">
+            <template #default>
+                <div class="mb-4">
+                    <label class="block mb-2 font-medium">Chọn bàn muốn tách</label>
+                    <select v-model="splitTargetTable" class="w-full border rounded p-2" @change="handleSelectSplitTable">
+                        <option :value="null">-- Chọn bàn --</option>
+                        <option v-for="table in splitTableOptions" :key="table.id" :value="table">{{ table.name }} ({{ statusText(table.status) }})</option>
+                    </select>
+                </div>
+                <div v-if="splitTargetTableCopy" class="mb-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <!-- Bàn hiện tại -->
+                        <div class="border rounded p-3">
+                            <h3 class="font-semibold text-lg mb-3 text-center">{{ editData.name }}</h3>
+                            <DataTable :value="editData.drinks" size="small" :rows="10" scrollHeight="300px">
+                                <template #empty>
+                                    <div class="text-center text-gray-500 py-4">Không có đồ uống</div>
+                                </template>
+                                <Column field="name" header="Đồ uống"></Column>
+                                <Column field="qty" header="SL" style="width: 80px">
+                                    <template #body="{ data }">
+                                        <span class="font-semibold">{{ data.qty }}</span>
+                                    </template>
+                                </Column>
+                                <Column header="" style="width: 120px">
+                                    <template #body="{ data }">
+                                        <div class="flex items-center gap-1">
+                                            <InputNumber v-if="data.qty > 1" v-model="transferQuantity[data.id]" :min="1" :max="data.qty" :placeholder="data.qty.toString()" inputStyle="width: 50px" class="text-xs" />
+                                            <Button
+                                                icon="pi pi-arrow-right"
+                                                size="small"
+                                                severity="info"
+                                                text
+                                                @click="transferDrink(data.id, 'current', 'target', transferQuantity[data.id] || data.qty)"
+                                                v-tooltip.top="'Chuyển sang ' + splitTargetTableCopy.name"
+                                            />
+                                        </div>
+                                    </template>
+                                </Column>
+                            </DataTable>
+                        </div>
+
+                        <!-- Bàn tách -->
+                        <div class="border rounded p-3">
+                            <h3 class="font-semibold text-lg mb-3 text-center">{{ splitTargetTableCopy.name }}</h3>
+                            <DataTable :value="splitTargetTableCopy.drinks" size="small" :rows="10" scrollHeight="300px">
+                                <template #empty>
+                                    <div class="text-center text-gray-500 py-4">Không có đồ uống</div>
+                                </template>
+                                <Column header="" style="width: 120px">
+                                    <template #body="{ data }">
+                                        <div class="flex items-center gap-1">
+                                            <Button
+                                                icon="pi pi-arrow-left"
+                                                size="small"
+                                                severity="info"
+                                                text
+                                                @click="transferDrink(data.id, 'target', 'current', transferQuantity[data.id] || data.qty)"
+                                                v-tooltip.top="'Chuyển sang ' + editData.name"
+                                            />
+                                            <InputNumber v-if="data.qty > 1" v-model="transferQuantity[data.id]" :min="1" :max="data.qty" :placeholder="data.qty.toString()" inputStyle="width: 50px" class="text-xs" />
+                                        </div>
+                                    </template>
+                                </Column>
+                                <Column field="name" header="Đồ uống"></Column>
+                                <Column field="qty" header="SL" style="width: 80px">
+                                    <template #body="{ data }">
+                                        <span class="font-semibold">{{ data.qty }}</span>
+                                    </template>
+                                </Column>
+                            </DataTable>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex gap-2 justify-end mt-4">
+                    <Button label="Lưu" icon="pi pi-check" severity="primary" @click="saveSplitTable" />
+                    <Button label="Đóng" icon="pi pi-times" severity="secondary" outlined @click="closeSplitDialog" />
+                </div>
+            </template>
+        </Dialog>
     </div>
 </template>
 
