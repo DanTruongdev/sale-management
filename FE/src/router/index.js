@@ -118,6 +118,16 @@ const router = createRouter({
                     component: () => import('@/views/pages/table/List.vue')
                 },
                 {
+                    path: '/facility/list',
+                    name: 'facilityList',
+                    component: () => import('@/views/pages/facility/List.vue')
+                },
+                {
+                    path: '/employee/list',
+                    name: 'employeeList',
+                    component: () => import('@/views/pages/employee/List.vue')
+                },
+                {
                     path: '/category-group/list',
                     name: 'categoryGroupList',
                     component: () => import('@/views/pages/categoryGroup/List.vue')

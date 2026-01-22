@@ -322,9 +322,6 @@ function closeCancelTableDialog() {
                         Tổng tiền: <span class="font-bold text-green-600">{{ formatCurrency(calculateTotal(table.drinks)) }}</span>
                     </div>
                     <Button size="small" :label="statusText(table.status)" outlined class="text-sm px-2 py-1 rounded" :severity="statusBadgeClass(table.status)" />
-                    <!-- <div class="text-sm px-2 py-1 rounded" :class="statusBadgeClass(table.status)">
-                        {{ statusText(table.status) }}
-                    </div> -->
                 </div>
             </div>
         </div>
@@ -592,6 +589,7 @@ function closeCancelTableDialog() {
     border-radius: 20px;
     font-size: 0.75rem;
     font-weight: 500;
+    backdrop-filter: blur(10px);
 }
 
 /* Drawer Content */

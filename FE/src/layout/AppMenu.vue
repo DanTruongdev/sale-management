@@ -37,7 +37,7 @@ const model = ref([
         label: 'Quản lý nhật ký',
         items: [
             {
-                label: 'Nhật ký bàn phục vụ',
+                label: 'Nhật ký phục vụ bàn',
                 icon: 'pi pi-fw pi-clipboard',
                 to: '/serving-table-log/list'
             }
