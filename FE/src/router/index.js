@@ -116,6 +116,11 @@ const router = createRouter({
                     path: '/table/list',
                     name: 'tableList',
                     component: () => import('@/views/pages/table/List.vue')
+                },
+                {
+                    path: '/category-group/list',
+                    name: 'categoryGroupList',
+                    component: () => import('@/views/pages/categoryGroup/List.vue')
                 }
             ]
         },

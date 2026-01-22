@@ -4,22 +4,82 @@ import AppMenuItem from './AppMenuItem.vue';
 
 const model = ref([
     {
-        label: 'Home',
+        label: 'Trang chủ',
         items: [
             {
                 label: 'Dashboard',
-                icon: 'pi pi-fw pi-home',
+                icon: 'pi pi-fw pi-chart-bar',
                 to: '/'
             }
         ]
     },
     {
-        label: 'Quản lý bàn',
+        label: 'Phục vụ',
         items: [
             {
-                label: 'Table',
-                icon: 'pi pi-fw pi-home',
+                label: 'Bàn',
+                icon: 'pi pi-fw pi-table',
                 to: '/table/list'
+            }
+        ]
+    },
+    {
+        label: 'Quản lý hóa đơn',
+        items: [
+            {
+                label: 'Hóa đơn',
+                icon: 'pi pi-fw pi-receipt',
+                to: '/invoice/list'
+            }
+        ]
+    },
+    {
+        label: 'Quản lý nhật ký',
+        items: [
+            {
+                label: 'Nhật ký bàn phục vụ',
+                icon: 'pi pi-fw pi-clipboard',
+                to: '/serving-table-log/list'
+            }
+        ]
+    },
+    {
+        label: 'Quản lý hệ thống',
+        items: [
+            {
+                label: 'Nhóm danh mục',
+                icon: 'pi pi-fw pi-sliders-h',
+                to: '/category-group/list'
+            },
+            {
+                label: 'Cơ sở',
+                icon: 'pi pi-fw pi-building',
+                to: '/facility/list'
+            },
+            {
+                label: 'Bàn phục vụ',
+                icon: 'pi pi-fw pi-th-large',
+                to: '/serving-table/list'
+            },
+            {
+                label: 'Đồ uống & thức ăn',
+                icon: 'pi pi-fw pi-apple',
+                to: '/food-and-drink/list'
+            },
+            {
+                label: 'Nhân viên',
+                icon: 'pi pi-fw pi-briefcase',
+                to: '/employee/list'
+            },
+            {
+                label: 'Người dùng',
+                icon: 'pi pi-fw pi-user',
+                to: '/user/list'
+            },
+            {
+                label: 'Vai trò',
+                icon: 'pi pi-fw pi-users',
+                to: '/role/list'
             }
         ]
     },

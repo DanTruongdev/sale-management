@@ -1,0 +1,112 @@
+
+Table users {
+  id integer [primary key]
+  username varchar
+  fullname varchar
+  email varchar
+  phone varchar
+  is_deleted bool
+  created_at timestamp
+}
+
+
+Table user_roles {
+  id integer [primary key]
+  role_id interger
+  user_id interger
+}
+
+Table roles {
+  id integer [primary key]
+  name varchar
+}
+
+Table refresh_token {
+  id integer [primary key]
+  token varchar
+  user_id integer
+  expired_at timestamp
+  is_revoked bool
+  device_id interger
+  created_at timestamp
+}
+
+Table category_groups {
+  id integer [primary key]
+  name varchar
+  created_at timestamp
+}
+
+Table category {
+  id integer [primary key]
+  name varchar
+  category_id integer
+  created_at timestamp
+}
+
+
+
+Table product {
+  id integer [primary key]
+  name varchar
+  description varchar
+  cur_price double
+  pro_price double
+  category_id integer
+  created_at timestamp
+}
+
+Table table {
+  id integer [primary key]
+  name varchar
+  num_of_guest interger
+  status varchar
+  created_at timestamp
+}
+
+Table order {
+  id integer [primary key]
+  table_id varchar
+  total double
+  promotion double
+  is_paid bool
+  payment_method varchar
+  created_user timestamp
+  created_at timestamp
+}
+
+Table order_item {
+  id integer [primary key]
+  order_id interger
+  product_id interger
+  quantity interger
+  note varchar
+  created_at timestamp
+}
+Table table_logs {
+  id integer [primary key]
+  content varchar
+  status varchar
+  table_id varchar
+  created_user timestamp
+  created_at timestamp
+}
+
+
+Ref: "users"."id" < "user_roles"."user_id"
+
+Ref: "roles"."id" < "user_roles"."role_id"
+
+Ref: "users"."id" < "refresh_token"."user_id"
+
+Ref: "category_groups"."id" < "category"."category_id"
+
+Ref: "category"."id" < "product"."category_id"
+
+Ref: "table"."id" < "table_logs"."table_id"
+
+Ref: "table"."id" < "order"."table_id"
+
+Ref: "order"."id" < "order_item"."order_id"
+
+Ref: "product"."id" < "order_item"."product_id"
