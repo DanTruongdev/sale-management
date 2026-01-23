@@ -1,10 +1,10 @@
 export const CategoryGroupService = {
-    getCategories() {
+    getCategoryGroups() {
         return [
             {
                 id: 1,
-                code: 'ELEC',
-                name: 'Electronics',
+                code: 'FOOD_AND_DRINK',
+                name: 'Food & Drink',
                 createdAt: new Date('2023-01-15')
             },
             {

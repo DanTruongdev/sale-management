@@ -12,10 +12,10 @@ This is a Vue 3 SPA for sale management using PrimeVue UI library. Key structure
 
 ## Developer Workflows
 
-- **Development**: `npm run dev` (Vite dev server with `--host` for network access)
-- **Build**: `npm run build` (Vite production build)
-- **Lint**: `npm run lint` (ESLint with Vue/Prettier, auto-fixes)
-- **Preview**: `npm run preview` (Serve built files locally)
+- **Development**: `bun run dev` (Vite dev server with `--host` for network access)
+- **Build**: `bun run build` (Vite production build)
+- **Lint**: `bun run lint` (ESLint with Vue/Prettier, auto-fixes)
+- **Preview**: `bun run preview` (Serve built files locally)
 - **Debugging**: Use Vue DevTools; console logs in components; no test runner configured
 
 ## Project Conventions

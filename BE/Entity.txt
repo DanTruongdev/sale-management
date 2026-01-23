@@ -46,26 +46,29 @@ Table category {
 
 
 
-Table product {
+Table food_drink {
   id integer [primary key]
   name varchar
   description varchar
   cur_price double
   pro_price double
   category_id integer
+  images varchar
   created_at timestamp
 }
 
 Table table {
   id integer [primary key]
   name varchar
-  num_of_guest interger
+  floor interger
+  facility_id interger
   status varchar
   created_at timestamp
 }
 
 Table order {
   id integer [primary key]
+  num_of_guest interger
   table_id varchar
   total double
   promotion double
@@ -78,7 +81,7 @@ Table order {
 Table order_item {
   id integer [primary key]
   order_id interger
-  product_id interger
+  food_drink_id interger
   quantity interger
   note varchar
   created_at timestamp

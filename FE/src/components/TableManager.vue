@@ -159,13 +159,16 @@ function confirmTable() {
     }
     Object.assign(selectedTable.value, editData.value, { status: 'occupied' });
     drawerVisible.value = false;
+    toast.add({ severity: 'success', summary: 'Thành công', detail: 'Bàn đã được cập nhật', life: 2000 });
 }
 
 function payTable() {
     // Thanh toán: reset bàn
     Object.assign(selectedTable.value, { guests: 0, drinks: [], status: 'empty' });
     drawerVisible.value = false;
+    toast.add({ severity: 'success', summary: 'Thành công', detail: 'Bàn đã được thanh toán', life: 2000 });
 }
+
 function holdTable() {
     // Giữ bàn: đặt trạng thái bàn thành 'reserved'
     Object.assign(selectedTable.value, { guests: 0, drinks: [], status: 'reserved' });
@@ -334,7 +337,6 @@ function closeCancelTableDialog() {
                     <div class="header-content">
                         <h2 class="header-title">{{ editData.name }}</h2>
                         <span class="header-status" :class="statusBadgeClass(selectedTable?.status)">
-                            <i class="pi pi-circle-fill text-[8px] mr-1"></i>
                             {{ statusText(selectedTable?.status) }}
                         </span>
                     </div>
@@ -425,7 +427,6 @@ function closeCancelTableDialog() {
                             <Button @click="confirmTable" label="Lưu" icon="pi pi-check" class="action-btn save-btn" />
                             <Button v-if="selectedTable.status === 'occupied'" @click="payTable" label="Thanh toán" icon="pi pi-credit-card" class="action-btn pay-btn" severity="success" />
                         </div>
-
                         <div class="secondary-actions">
                             <Button v-if="selectedTable.status === 'empty'" @click="holdTable" icon="pi pi-credit-card" v-tooltip.top="'Giữ bàn'" class="icon-action-btn" severity="warn" outlined />
                             <Button v-if="selectedTable.status === 'reserved'" @click="cancelReserve" icon="pi pi-ban" v-tooltip.top="'Hủy đặt bàn'" class="icon-action-btn" severity="danger" outlined />
@@ -556,40 +557,89 @@ function closeCancelTableDialog() {
     display: flex;
     align-items: center;
     gap: 1rem;
-    padding: 1.25rem 1.5rem;
+    padding: 1.5rem 2rem;
     width: 100%;
     color: white;
+    background: linear-gradient(135deg, var(--p-primary-500) 0%, var(--p-primary-700) 100%);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    position: relative;
+    overflow: hidden;
+    border-radius: 12px;
+}
+
+.drawer-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle at 20% 80%, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+    pointer-events: none;
 }
 
 .header-icon {
-    width: 48px;
-    height: 48px;
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 12px;
+    width: 56px;
+    height: 56px;
+    background: rgba(255, 255, 255, 0.25);
+    border-radius: 16px;
     display: flex;
     align-items: center;
     justify-content: center;
-    backdrop-filter: blur(10px);
+    backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transition:
+        transform 0.3s ease,
+        box-shadow 0.3s ease;
+}
+
+.header-icon:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
 }
 
 .header-content {
     flex: 1;
+    position: relative;
+    z-index: 1;
 }
 
 .header-title {
-    font-size: 1.25rem;
-    font-weight: 600;
-    margin: 0 0 0.25rem 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0 0 0.5rem 0;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    letter-spacing: -0.025em;
+    color: white;
 }
 
 .header-status {
     display: inline-flex;
     align-items: center;
-    padding: 0.25rem 0.75rem;
-    border-radius: 20px;
-    font-size: 0.75rem;
-    font-weight: 500;
+    padding: 0.375rem 1rem;
+    border-radius: 24px;
+    font-size: 0.8rem;
+    font-weight: 600;
     backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.header-status.secondary {
+    background: rgba(107, 114, 128, 0.9);
+    color: white;
+}
+
+.header-status.success {
+    background: rgba(34, 197, 94, 0.9);
+    color: white;
+}
+
+.header-status.warn {
+    background: rgba(245, 158, 11, 0.9);
+    color: white;
 }
 
 /* Drawer Content */

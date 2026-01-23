@@ -128,9 +128,24 @@ const router = createRouter({
                     component: () => import('@/views/pages/employee/List.vue')
                 },
                 {
+                    path: '/serving-table/list',
+                    name: 'servingTableList',
+                    component: () => import('@/views/pages/servingTable/List.vue')
+                },
+                {
+                    path: '/food-and-drink/list',
+                    name: 'foodAndDrinkList',
+                    component: () => import('@/views/pages/foodDrink/List.vue')
+                },
+                {
                     path: '/category-group/list',
                     name: 'categoryGroupList',
                     component: () => import('@/views/pages/categoryGroup/List.vue')
+                },
+                {
+                    path: '/category/list/:categoryGroupId',
+                    name: 'categoryList',
+                    component: () => import('@/views/pages/category/List.vue')
                 }
             ]
         },
