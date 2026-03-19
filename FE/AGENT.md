@@ -34,13 +34,13 @@ This document is intended to provide AI agents with a fast, high-level understan
 ## 🧩 How the App Starts
 
 1. **Entry Point:** `src/main.js`
-   - Creates the Vue app
-   - Registers PrimeVue theme & global services (`ToastService`, `ConfirmationService`)
-   - Mounts the router
+    - Creates the Vue app
+    - Registers PrimeVue theme & global services (`ToastService`, `ConfirmationService`)
+    - Mounts the router
 
 2. **Routing (SPA navigation):** `src/router/index.js`
-   - Root layout is `AppLayout.vue`
-   - Routes lazily import views under `src/views/`
+    - Root layout is `AppLayout.vue`
+    - Routes lazily import views under `src/views/`
 
 ---
 
@@ -49,6 +49,7 @@ This document is intended to provide AI agents with a fast, high-level understan
 ### Mock Services
 
 Most data is provided via services in `src/service/`:
+
 - Example: `ProductService.getProducts()` returns static arrays
 - Services are plain JS objects with methods returning arrays or `Promise.resolve(data)`
 
@@ -96,4 +97,4 @@ npm run dev
 
 ---
 
-*Generated using gitnexus analysis (query + file extraction) to provide a concise project snapshot for AI tooling.*
+_Generated using gitnexus analysis (query + file extraction) to provide a concise project snapshot for AI tooling._
